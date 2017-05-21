@@ -77,7 +77,7 @@ func (i *IngressController) Run(stopChan <-chan struct{}) {
 // LoadBalancer IP field to the HostIP of the node with most pods serving the
 // ingress.
 func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
-	var hosts map[string]uint
+	hosts := make(map[string]uint)
 	for _, rule := range ingress.Spec.Rules {
 		for _, path := range rule.HTTP.Paths {
 			svc, err := i.CoreV1().Services(ingress.Namespace).Get(path.Backend.ServiceName, metav1.GetOptions{})
