@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-ingress-status-controller
+  namespace: kube-system
+  labels:
+    application: kube-ingress-status-controller
+    version: latest
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: kube-ingress-status-controller
+  template:
+    metadata:
+      labels:
+        application: kube-ingress-status-controller
+        version: latest
+    spec:
+      containers:
+      - name: kube-ingress-status-controller
+        image: mikkeloscar/kube-ingress-status-controller:latest
+        args:
+        - --interval=10m
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 10m
+            memory: 25Mi
