@@ -95,6 +95,10 @@ func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
 			}
 
 			for _, pod := range pods.Items {
+				if pod.Status.Phase != v1.PodRunning {
+					continue
+				}
+
 				if _, ok := hosts[pod.Status.HostIP]; ok {
 					hosts[pod.Status.HostIP] += 1
 				} else {
