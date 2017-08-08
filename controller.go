@@ -108,6 +108,11 @@ func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
 		}
 	}
 
+	if len(hosts) == 0 {
+		log.Info("No backends found for ingress, can't update ingress host field")
+		return nil
+	}
+
 	var host string
 	var max uint
 	for ip, count := range hosts {
