@@ -120,11 +120,16 @@ func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
 	ingress.Status.LoadBalancer.Ingress = []v1.LoadBalancerIngress{{
 		IP: host,
 	}}
+
+	_, err := i.ExtensionsV1beta1().Ingresses(ingress.Namespace).UpdateStatus(ingress)
+	if err != nil {
+		return err
+	}
+
 	log.WithFields(log.Fields{
 		"ingress": ingress.Name,
 		"ip":      host,
 	}).Info()
 
-	_, err := i.ExtensionsV1beta1().Ingresses(ingress.Namespace).Update(ingress)
-	return err
+	return nil
 }
