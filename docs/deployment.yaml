@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kube-ingress-status-controller
@@ -7,6 +7,7 @@ metadata:
     application: kube-ingress-status-controller
     version: latest
 spec:
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -18,14 +19,13 @@ spec:
         application: kube-ingress-status-controller
         version: latest
     spec:
+      serviceAccount: kube-ingress-status-controller
       containers:
       - name: kube-ingress-status-controller
         image: mikkeloscar/kube-ingress-status-controller:latest
-        args:
-        - --interval=10m
         resources:
           limits:
-            cpu: 200m
+            cpu: 20m
             memory: 200Mi
           requests:
             cpu: 10m

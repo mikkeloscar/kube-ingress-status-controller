@@ -17,19 +17,22 @@ const (
 
 var (
 	config struct {
-		Interval time.Duration
+		Interval       time.Duration
+		IngressAddress string
 	}
 )
 
 func init() {
 	kingpin.Flag("interval", "Interval between checks.").
 		Default(defaultInterval).DurationVar(&config.Interval)
+	kingpin.Flag("ingress-ip-address", "Static IP address to be put on all ingresses.").
+		StringVar(&config.IngressAddress)
 }
 
 func main() {
 	kingpin.Parse()
 
-	controller, err := NewIngressController(config.Interval)
+	controller, err := NewIngressController(config.Interval, config.IngressAddress)
 	if err != nil {
 		log.Fatal(err)
 	}

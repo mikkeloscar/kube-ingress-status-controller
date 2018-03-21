@@ -15,11 +15,12 @@ import (
 
 type IngressController struct {
 	kubernetes.Interface
-	interval time.Duration
+	interval      time.Duration
+	staticAddress string
 }
 
 // NewIngressController initializes a new IngressController.
-func NewIngressController(interval time.Duration) (*IngressController, error) {
+func NewIngressController(interval time.Duration, staticAddress string) (*IngressController, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
@@ -31,8 +32,9 @@ func NewIngressController(interval time.Duration) (*IngressController, error) {
 	}
 
 	controller := &IngressController{
-		Interface: client,
-		interval:  interval,
+		Interface:     client,
+		interval:      interval,
+		staticAddress: staticAddress,
 	}
 
 	return controller, nil
@@ -77,52 +79,54 @@ func (i *IngressController) Run(stopChan <-chan struct{}) {
 // LoadBalancer IP field to the HostIP of the node with most pods serving the
 // ingress.
 func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
-	hosts := make(map[string]uint)
-	for _, rule := range ingress.Spec.Rules {
-		for _, path := range rule.HTTP.Paths {
-			svc, err := i.CoreV1().Services(ingress.Namespace).Get(path.Backend.ServiceName, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-
-			opts := metav1.ListOptions{
-				LabelSelector: labels.Set(svc.Spec.Selector).String(),
-			}
-
-			pods, err := i.CoreV1().Pods(svc.Namespace).List(opts)
-			if err != nil {
-				return err
-			}
-
-			for _, pod := range pods.Items {
-				if pod.Status.Phase != v1.PodRunning {
-					continue
+	host := i.staticAddress
+	if host == "" {
+		hosts := make(map[string]uint)
+		for _, rule := range ingress.Spec.Rules {
+			for _, path := range rule.HTTP.Paths {
+				svc, err := i.CoreV1().Services(ingress.Namespace).Get(path.Backend.ServiceName, metav1.GetOptions{})
+				if err != nil {
+					return err
 				}
 
-				if _, ok := hosts[pod.Status.HostIP]; ok {
-					hosts[pod.Status.HostIP] += 1
-				} else {
-					hosts[pod.Status.HostIP] = 1
+				opts := metav1.ListOptions{
+					LabelSelector: labels.Set(svc.Spec.Selector).String(),
+				}
+
+				pods, err := i.CoreV1().Pods(svc.Namespace).List(opts)
+				if err != nil {
+					return err
+				}
+
+				for _, pod := range pods.Items {
+					if pod.Status.Phase != v1.PodRunning {
+						continue
+					}
+
+					if _, ok := hosts[pod.Status.HostIP]; ok {
+						hosts[pod.Status.HostIP] += 1
+					} else {
+						hosts[pod.Status.HostIP] = 1
+					}
 				}
 			}
 		}
-	}
 
-	if len(hosts) == 0 {
-		log.Info("No backends found for ingress, can't update ingress host field")
-		return nil
-	}
+		if len(hosts) == 0 {
+			log.Info("No backends found for ingress, can't update ingress host field")
+			return nil
+		}
 
-	var host string
-	var max uint
-	for ip, count := range hosts {
-		log.WithFields(log.Fields{
-			"host": ip,
-			"num":  count,
-		}).Debug()
-		if count > max {
-			host = ip
-			max = count
+		var max uint
+		for ip, count := range hosts {
+			log.WithFields(log.Fields{
+				"host": ip,
+				"num":  count,
+			}).Debug()
+			if count > max {
+				host = ip
+				max = count
+			}
 		}
 	}
 

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-ingress-status-controller
+  namespace: kube-system
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: kube-ingress-status-controller
+rules:
+- apiGroups:
+  - "extensions"
+  resources:
+  - ingresses
+  verbs:
+  - list
+- apiGroups:
+  - "extensions"
+  resources:
+  - ingresses/status
+  verbs:
+  - update
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: kube-ingress-status-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-ingress-status-controller
+subjects:
+- kind: ServiceAccount
+  name: kube-ingress-status-controller
+  namespace: kube-system

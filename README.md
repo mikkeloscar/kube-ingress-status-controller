@@ -5,3 +5,6 @@ Simple controller to set ingress status field (IP or hostname) based on Pod
 distribution. E.g. if an ingress points to a service backend where most
 targeted pods are on node X then the IP of node X will be set on the ingress
 status field.
+
+Can also be configured to always set a static IP Address on all ingresses with
+the flag `--ingress-ip-address`.
