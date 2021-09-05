@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -8,7 +9,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -37,16 +38,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	stopChan := make(chan struct{}, 1)
-	go handleSigterm(stopChan)
+	ctx, cancel := context.WithCancel(context.Background())
+	go handleSigterm(cancel)
 
-	controller.Run(stopChan)
+	controller.Run(ctx)
 }
 
-func handleSigterm(stopChan chan struct{}) {
+func handleSigterm(cancelFunc func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	<-signals
 	log.Info("Received Term signal. Terminating...")
-	close(stopChan)
+	cancelFunc()
 }

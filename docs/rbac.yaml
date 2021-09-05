@@ -7,18 +7,18 @@ metadata:
 ---
 
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-ingress-status-controller
 rules:
 - apiGroups:
-  - "extensions"
+  - "networking"
   resources:
   - ingresses
   verbs:
   - list
 - apiGroups:
-  - "extensions"
+  - "networking"
   resources:
   - ingresses/status
   verbs:
@@ -27,7 +27,7 @@ rules:
 ---
 
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-ingress-status-controller
 roleRef:

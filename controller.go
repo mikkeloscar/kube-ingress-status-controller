@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 )
 
@@ -40,14 +41,14 @@ func NewIngressController(interval time.Duration, staticAddress string) (*Ingres
 	return controller, nil
 }
 
-func (i *IngressController) runOnce() error {
-	ingresses, err := i.ExtensionsV1beta1().Ingresses(v1.NamespaceAll).List(metav1.ListOptions{})
+func (i *IngressController) runOnce(ctx context.Context) error {
+	ingresses, err := i.NetworkingV1().Ingresses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	for _, ingress := range ingresses.Items {
-		err = i.updateIngress(&ingress)
+		err = i.updateIngress(ctx, &ingress)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -59,16 +60,16 @@ func (i *IngressController) runOnce() error {
 
 // Run runs the controller loop until it receives a stop signal over the stop
 // channel.
-func (i *IngressController) Run(stopChan <-chan struct{}) {
+func (i *IngressController) Run(ctx context.Context) {
 	for {
-		err := i.runOnce()
+		err := i.runOnce(ctx)
 		if err != nil {
 			log.Error(err)
 		}
 
 		select {
 		case <-time.After(i.interval):
-		case <-stopChan:
+		case <-ctx.Done():
 			log.Info("Terminating main controller loop.")
 			return
 		}
@@ -78,13 +79,13 @@ func (i *IngressController) Run(stopChan <-chan struct{}) {
 // updateIngress finds all the pod backends for an ingress and sets the
 // LoadBalancer IP field to the HostIP of the node with most pods serving the
 // ingress.
-func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
+func (i *IngressController) updateIngress(ctx context.Context, ingress *networkingv1.Ingress) error {
 	host := i.staticAddress
 	if host == "" {
 		hosts := make(map[string]uint)
 		for _, rule := range ingress.Spec.Rules {
 			for _, path := range rule.HTTP.Paths {
-				svc, err := i.CoreV1().Services(ingress.Namespace).Get(path.Backend.ServiceName, metav1.GetOptions{})
+				svc, err := i.CoreV1().Services(ingress.Namespace).Get(ctx, path.Backend.Service.Name, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -93,7 +94,7 @@ func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
 					LabelSelector: labels.Set(svc.Spec.Selector).String(),
 				}
 
-				pods, err := i.CoreV1().Pods(svc.Namespace).List(opts)
+				pods, err := i.CoreV1().Pods(svc.Namespace).List(ctx, opts)
 				if err != nil {
 					return err
 				}
@@ -134,7 +135,7 @@ func (i *IngressController) updateIngress(ingress *v1beta1.Ingress) error {
 		IP: host,
 	}}
 
-	_, err := i.ExtensionsV1beta1().Ingresses(ingress.Namespace).UpdateStatus(ingress)
+	_, err := i.NetworkingV1().Ingresses(ingress.Namespace).UpdateStatus(ctx, ingress, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
