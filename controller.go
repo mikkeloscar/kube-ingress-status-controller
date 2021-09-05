@@ -104,11 +104,20 @@ func (i *IngressController) updateIngress(ctx context.Context, ingress *networki
 						continue
 					}
 
-					if _, ok := hosts[pod.Status.HostIP]; ok {
-						hosts[pod.Status.HostIP] += 1
-					} else {
-						hosts[pod.Status.HostIP] = 1
+					// resolve external IP from node
+					node, err := i.CoreV1().Nodes().Get(ctx, pod.Spec.NodeName, metav1.GetOptions{})
+					if err != nil {
+						return err
 					}
+					nodeAddress := ""
+					for _, address := range node.Status.Addresses {
+						if address.Type == v1.NodeExternalIP {
+							nodeAddress = address.Address
+							break
+						}
+					}
+
+					hosts[nodeAddress] += 1
 				}
 			}
 		}
