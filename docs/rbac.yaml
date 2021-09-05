@@ -11,6 +11,21 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-ingress-status-controller
 rules:
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - pods
+  verbs:
+  - get
+  - list
 - apiGroups:
   - networking.k8s.io
   resources:
