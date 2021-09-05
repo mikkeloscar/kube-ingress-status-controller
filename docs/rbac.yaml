@@ -12,13 +12,13 @@ metadata:
   name: kube-ingress-status-controller
 rules:
 - apiGroups:
-  - "networking"
+  - networking.k8s.io
   resources:
   - ingresses
   verbs:
   - list
 - apiGroups:
-  - "networking"
+  - networking.k8s.io
   resources:
   - ingresses/status
   verbs:
