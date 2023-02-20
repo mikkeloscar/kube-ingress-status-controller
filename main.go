@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/kingpin/v2"
 
 	log "github.com/sirupsen/logrus"
 )

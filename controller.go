@@ -5,7 +5,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,7 +139,7 @@ func (i *IngressController) updateIngress(ctx context.Context, ingress *networki
 		}
 	}
 
-	ingress.Status.LoadBalancer.Ingress = []v1.LoadBalancerIngress{{
+	ingress.Status.LoadBalancer.Ingress = []networkingv1.IngressLoadBalancerIngress{{
 		IP: host,
 	}}
 
