@@ -8,3 +8,11 @@ updates:
   groups:
     all-go-mod-patch-and-minor:
       patterns: ["*"]
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "monthly"
+  groups:
+    github-actions:
+      patterns:
+        - "*"
